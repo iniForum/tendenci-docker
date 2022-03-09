@@ -1,4 +1,4 @@
-#! /bin/bash 
+#! /bin/bash
 
 # Environment
 PIP=$(which pip3)
@@ -28,11 +28,18 @@ function install_tendenci()
 {
     # Installing tendenci
     echo "Installing tendenci" && echo ""
-    cd "$TENDENCI_INSTALL_DIR"
-    $PIP install tendenci
-    tendenci startproject "$APP_NAME" "$APP_NAME"
-    cd "$APP_NAME"
-    $PIP install  -r requirements/dev.txt --upgrade
+
+# install site from tendenci project template, and use tendenci's requirements
+#    cd "$TENDENCI_INSTALL_DIR"
+#    $PIP install --no-cache-dir tendenci
+#    tendenci startproject "$APP_NAME" "$APP_NAME"
+#    cd "$APP_NAME"
+
+# install site from exisiting rjd project, copied into Dockerfile, and use those requirements
+    cd "$TENDENCI_PROJECT_ROOT"
+    $PYTHON -m pip install --no-cache-dir --upgrade pip
+    $PYTHON -m pip install --no-cache-dir --upgrade -r requirements/dev.txt
+
 
     #Install theme
     echo "Installing theme" && echo ""
@@ -48,12 +55,17 @@ function install_tendenci()
     mkdir "$TENDENCI_PROJECT_ROOT"/static
     chown "$TENDENCI_USER:" /var/log/"$APP_NAME"/
     chmod -R -x+X,g+rw,o-rwx /var/log/"$APP_NAME"/
+
+# rjd === inserted to solve the /var/log/tendenci/ error
+#    chown "$TENDENCI_USER:" /var/log/tendenci/
+#    chmod -R -x+X,g+rw,o-rwx /var/log/tendenci/
+
     chown -R "$TENDENCI_USER:" "$TENDENCI_HOME"
     chmod -R -x+X,g-w,o-rwx "$TENDENCI_PROJECT_ROOT"/
     chmod +x                "$TENDENCI_PROJECT_ROOT"/manage.py
-    chmod -R ug-x+rwX,o-rwx "$TENDENCI_PROJECT_ROOT"/media/ 
-    chmod -R ug-x+rwX,o-rwx "$TENDENCI_PROJECT_ROOT"/themes/ 
-    chmod -R ug-x+rwX,o-rwx "$TENDENCI_PROJECT_ROOT"/whoosh_index/    
+    chmod -R ug-x+rwX,o-rwx "$TENDENCI_PROJECT_ROOT"/media/
+    chmod -R ug-x+rwX,o-rwx "$TENDENCI_PROJECT_ROOT"/themes/
+    chmod -R ug-x+rwX,o-rwx "$TENDENCI_PROJECT_ROOT"/whoosh_index/
 
 }
 
@@ -61,8 +73,8 @@ function create_cronjobs()
 {
 
     echo "Creating cronjobs" && echo ""
-    (crontab -l ; echo "30   2 * * * $PYTHON $TENDENCI_INSTALL_DIR/manage.py run_nightly_commands") | crontab -
-    (crontab -l ; echo "30   2 * * * $PYTHON $TENDENCI_INSTALL_DIR/manage.py process_unindexed") | crontab -
+    (crontab -l ; echo "30   2 * * * $PYTHON $TENDENCI_PROJECT_ROOT/manage.py run_nightly_commands") | crontab -
+    (crontab -l ; echo "30   2 * * * $PYTHON $TENDENCI_PROJECT_ROOT/manage.py process_unindexed") | crontab -
 
 }
 
